@@ -7,6 +7,7 @@
 //shiru@mail.ru
 //https://www.patreon.com/shiru8bit
 
+
 #pragma GCC optimize ("-O3")
 #pragma GCC push_options
 
@@ -759,13 +760,13 @@ uint8_t file_browser_ext(const char* name)
 
 
 
-void file_browser(const char* path, const __FlashStringHelper* header, char* fname, uint16_t fname_len)
+void file_browser(const char* path, const char* header, char* fname, uint16_t fname_len)
 {
   int16_t i, j, sy, pos, off, frame, file_count, control_type;
   uint8_t change, filter;
   fs::Dir dir;
   fs::File entry;
-  char name[19 + 1];
+  char name[sizeof(filename)];
   const char* str;
 
   memset(fname, 0, fname_len);
@@ -998,7 +999,7 @@ void setup() {
 
   //Init ESPboy
 
-  myESPboy.begin(((String)F("ZX48 LinKeFong core")).c_str());
+  myESPboy.begin("ZX48 LinKeFong core");
 
   pad_state = 0;
   pad_state_prev = 0;
@@ -1220,7 +1221,7 @@ void loop()
   control_pad_lft = K_NULL;
   control_pad_rgt = K_NULL;
 
-  file_browser("/", F("Load .Z80:"), filename, sizeof(filename));
+  file_browser("/", "Load .Z80:", filename, sizeof(filename));
 
   zx_init();
 
@@ -1233,6 +1234,7 @@ void loop()
     if (zx_load_scr(filename))
     {
       zx_render_frame();
+      delay(500);
       wait_any_key(3 * 1000);
     }
 
