@@ -216,6 +216,8 @@ extern "C" {
   uint8_t port_in(uint16_t port);
 };
 
+
+
 void mem_wr(uint16_t addr, uint8_t value)
 {
   if (addr >= 0x4000)
@@ -613,7 +615,7 @@ int IRAM_ATTR check_key()
 {
   pad_state_prev = pad_state;
   pad_state = ~myESPboy.mcp.readGPIOAB() & 255;
-  pad_state_t = pad_state ^ pad_state_prev & pad_state;
+  pad_state_t = (pad_state ^ pad_state_prev) & pad_state;
   return pad_state;
 }
 
@@ -638,7 +640,7 @@ void wait_any_key(int timeout)
       if (timeout <= 0) break;
     }
 
-    delay(100);
+    myESPboy.smartDelay(100);
   }
 }
 
@@ -794,7 +796,7 @@ void file_browser(const char* path, const char* header, char* fname, uint16_t fn
   {
     filename[0] = 0;
     //printFast(24, 60, (char*)"No files found", TFT_RED);
-    //while (1) delay(1000);
+    //while (1) myESPboy.smartDelay(1000);
   }
   else
   {
@@ -887,7 +889,7 @@ void file_browser(const char* path, const char* header, char* fname, uint16_t fn
 
       change = 1;
       frame = 0;
-      delay(100); 
+      myESPboy.smartDelay(100); 
     }
 
     if (myESPboy.getKeys() & PAD_DOWN)
@@ -898,7 +900,7 @@ void file_browser(const char* path, const char* header, char* fname, uint16_t fn
 
       change = 1;
       frame = 0;
-      delay(100); 
+      myESPboy.smartDelay(100); 
     }
 
     if (myESPboy.getKeys() & PAD_ACT)
@@ -906,21 +908,21 @@ void file_browser(const char* path, const char* header, char* fname, uint16_t fn
       ++control_type;
       if (control_type >= CONTROL_TYPES) control_type = 0;
       change = 1;
-      delay(200); 
+      myESPboy.smartDelay(200); 
     }
 
     if (myESPboy.getKeys() & PAD_ESC) {
-      delay(100); 
+      myESPboy.smartDelay(100); 
       break;
     }
 
     if ((myESPboy.getKeys() & PAD_LFT) || (myESPboy.getKeys() & PAD_RGT)) {
       fname[0] = 0;
-      delay(500);
+      myESPboy.smartDelay(500);
       break;
     }
 
-    delay(1);
+    ESP.wdtFeed();
     ++frame;
 
     if (!(frame & 127)) change = 1;
@@ -1154,7 +1156,7 @@ void keybModule() {
           }
           if (keykeyboardpressed == K_LED) {
             mcpKeyboard.digitalWrite(7, !mcpKeyboard.digitalRead(7));
-            delay(100);
+            myESPboy.smartDelay(100);
           }
         }
       }
@@ -1171,12 +1173,14 @@ void redrawOnscreen(uint8_t slX, uint8_t slY, uint8_t shf) {
 }
 
 
+
 void keybOnscreen() {
   uint8_t selX = 0, selY = 0, shifts = 0;
   redrawOnscreen(selX, selY, shifts);
   while (1) {
     check_key();
-    delay(100);
+    ESP.wdtFeed();
+    myESPboy.smartDelay(100);
     if ((pad_state & PAD_RIGHT) && selX < 19) selX++;
     if ((pad_state & PAD_LEFT) && selX > 0) selX--;
     if ((pad_state & PAD_DOWN) && selY < 1) selY++;
@@ -1184,11 +1188,11 @@ void keybOnscreen() {
     if (((pad_state & PAD_ACT) || (pad_state & PAD_ESC)) && !(selX == 10 && selY == 1) && !(selX == 18 && selY == 1)) break;
     if ((pad_state & PAD_ACT) && (selX == 10) && (selY == 1)) {
       shifts |= (shifts ^ 1);
-      delay (300);
+      myESPboy.smartDelay(300);
     }
     if ((pad_state & PAD_ACT) && (selX == 18) && (selY == 1)) {
       shifts |= (shifts ^ 2);
-      delay (300);
+      myESPboy.smartDelay(300);
     }
     if ((pad_state & PAD_ACT) && (selX == 10) && (selY == 1) && (shifts & 2)) break;
     if ((pad_state & PAD_ACT) && (selX == 18) && (selY == 1) && (shifts & 1)) break;
@@ -1198,7 +1202,7 @@ void keybOnscreen() {
   if (pad_state & PAD_ACT) key_matrix[pgm_read_byte(&keybOnscrMatrix[selY][selX])] |= 1;
   if (pad_state & PAD_ACT && (shifts & 1)) key_matrix[K_CS] |= 1;
   if (pad_state & PAD_ACT && (shifts & 2)) key_matrix[K_SS] |= 1;
-  delay(300);
+  myESPboy.smartDelay(300);
   check_key();
   myESPboy.tft.fillRect(0, 128 - 16, 128, 16, TFT_BLACK);
   memset(line_change, 0xff, sizeof(line_change));
@@ -1234,7 +1238,7 @@ void loop()
     if (zx_load_scr(filename))
     {
       zx_render_frame();
-      delay(500);
+      myESPboy.smartDelay(500);
       wait_any_key(3 * 1000);
     }
 
@@ -1268,7 +1272,7 @@ void loop()
 
   while (1)
   {
-   delay(0);
+   ESP.wdtFeed();
 
     noInterrupts();
     memset((void *)key_matrix, 0, sizeof(key_matrix));
@@ -1276,10 +1280,9 @@ void loop()
     check_key();
     
     //check onscreen keyboard
-    if ((pad_state & PAD_LFT) && (pad_state & PAD_RGT)) {interrupts(); keybOnscreen(); noInterrupts();}
+    if ((pad_state & PAD_LFT) && (pad_state & PAD_RGT)) {keybOnscreen();}
 
     //check keyboard module
-    if (keybModuleExist) {interrupts(); keybModule(); noInterrupts();}
 
     switch (control_type)
     {
@@ -1308,7 +1311,7 @@ void loop()
     }
 
     interrupts();
-    while (!frame_done) delay(0);
+    while (!frame_done) ESP.wdtFeed();
 
     frame_done = false;
 

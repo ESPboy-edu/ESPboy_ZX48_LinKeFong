@@ -53,6 +53,7 @@ public:
   void playTone(uint16_t frq, uint16_t dur);
   void playTone(uint16_t frq);
   void noPlayTone();
+  void smartDelay(uint32_t counter);
 };
 
 #endif

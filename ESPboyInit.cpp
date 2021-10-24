@@ -9,18 +9,23 @@ v1.0
 
 ESPboyInit::ESPboyInit(){};
 
+void ESPboyInit::smartDelay(uint32_t counter){
+ counter = ESP.getCycleCount() + counter * 160000;
+ while(ESP.getCycleCount() < counter) ESP.wdtFeed();
+};
+
 void ESPboyInit::begin(const char *appName) {
   //Serial.begin(115200); //serial init
   WiFi.mode(WIFI_OFF); // to safe battery power
 
 //DAC init and backlit off
   dac.begin(MCP4725address);
-  delay (100);
+  smartDelay(100);
   dac.setVoltage(0, false);
 
 //mcp23017 init for buttons, LED LOCK and TFT Chip Select pins
   mcp.begin(MCP23017address);
-  delay(100);
+  smartDelay(100);
   for (int i=0;i<8;i++){  
      mcp.pinMode(i, INPUT);
      mcp.pullUp(i, HIGH);}
@@ -31,17 +36,12 @@ void ESPboyInit::begin(const char *appName) {
 
 //sound init and test
   pinMode(SOUNDPIN, OUTPUT);
-  //playTone(200, 100); 
-  //delay(100);
-  //playTone(100, 100);
-  //delay(100);
-  //noPlayTone();
   
 //LCD TFT init
   mcp.pinMode(CSTFTPIN, OUTPUT);
   mcp.digitalWrite(CSTFTPIN, LOW);
   tft.begin();
-  delay(100);
+  smartDelay(100);
   //tft.setRotation(0);
   tft.fillScreen(TFT_BLACK);
 
@@ -55,9 +55,9 @@ void ESPboyInit::begin(const char *appName) {
 //LCD backlit fading on
   for (uint16_t bcklt=300; bcklt<4095; bcklt+=30){
     dac.setVoltage(bcklt, false);
-    delay(10);}
+    smartDelay(10);}
 
-  delay(1000);
+  smartDelay(1000);
 
 //clear TFT and backlit on high
   dac.setVoltage(4095, true);
