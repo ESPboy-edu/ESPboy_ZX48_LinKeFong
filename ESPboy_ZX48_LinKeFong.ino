@@ -1280,9 +1280,10 @@ void loop()
     check_key();
     
     //check onscreen keyboard
-    if ((pad_state & PAD_LFT) && (pad_state & PAD_RGT)) {keybOnscreen();}
+    if ((pad_state & PAD_LFT) && (pad_state & PAD_RGT)) keybOnscreen();
 
     //check keyboard module
+    if (keybModuleExist) keybModule();
 
     switch (control_type)
     {
