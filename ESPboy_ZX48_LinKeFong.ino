@@ -1212,7 +1212,6 @@ void keybOnscreen() {
 
 void loop()
 {
-
   file_cursor = 0;
 
   control_type = CONTROL_PAD_KEYBOARD;
