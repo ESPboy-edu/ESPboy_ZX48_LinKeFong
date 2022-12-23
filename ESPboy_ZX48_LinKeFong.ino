@@ -1,4 +1,5 @@
-//v1.4 19.10.2021 Speed optimizations, palette corrections, PROGMEM demo game load
+//v1.5 23.12.2022 nbSPI rendering added + speed restriction to real ZX speed (RomanS)
+//v1.4 19.10.2021 Speed optimizations, palette corrections, PROGMEM demo game load (RomanS)
 //v1.3 13.08.2021 Moving from libzymosis to z80emu by Lin Ke-Fong to improve performance and improving sound rendering
 //v1.2 06.01.2020 bug fixes, onscreen keyboard added, keyboard module support
 //v1.1 23.12.2019 z80 format v3 support, improved frameskip, screen and controls config files
@@ -18,7 +19,7 @@
 #include "game.h"
 #include "nbSPI.h"
 
-#define SIGMA_DELTA_RATE 16000
+#define SIGMA_DELTA_RATE 48000
 
 /*
    IMPORTANT: the project consumes a lot of RAM, to allow enough
@@ -77,6 +78,8 @@ uint8_t keybModuleExist;
 #define PAD_LFT         0x40
 #define PAD_RGT         0x80
 #define PAD_ANY         0xff
+
+static uint_fast32_t TTOT; //pause delay to provide right fps, sets in setup();
 
 uint16_t line_buffer_1[128] __attribute__ ((aligned(32)));
 uint16_t line_buffer_2[128] __attribute__ ((aligned(32)));
@@ -624,6 +627,10 @@ row = 16;
     row++;
     flip=!flip;
   }
+
+ static uint_fast32_t startTime;
+ while (((ESP.getCycleCount()) - startTime) < TTOT /*it's global, sets in setup()*/);
+ startTime = ESP.getCycleCount(); 
 }
 
 
@@ -1042,6 +1049,8 @@ void setup() {
   }
   else keybModuleExist = 0;
 
+  TTOT = ESP.getCpuFreqMHz()*1000000/ZX_FRAME_RATE;
+  
   //filesystem init
   LittleFS.begin();
 
