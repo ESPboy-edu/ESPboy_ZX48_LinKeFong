@@ -79,7 +79,6 @@ uint8_t keybModuleExist;
 #define PAD_RGT         0x80
 #define PAD_ANY         0xff
 
-static uint_fast32_t TTOT; //pause delay to provide right fps, sets in setup();
 
 uint16_t line_buffer_1[128] __attribute__ ((aligned(32)));
 uint16_t line_buffer_2[128] __attribute__ ((aligned(32)));
@@ -555,9 +554,7 @@ void IRAM_ATTR zx_render_frame()
       swplh(RGB565Q(255, 255, 255)),
     };
 
-  while(nbSPI_isBusy());
-  myESPboy.tft.startWrite();  
-
+  
   if (line_change[32])
    {
     line_change[32] = 0;
@@ -627,10 +624,6 @@ row = 16;
     row++;
     flip=!flip;
   }
-
- static uint_fast32_t startTime;
- while (((ESP.getCycleCount()) - startTime) < TTOT /*it's global, sets in setup()*/);
- startTime = ESP.getCycleCount(); 
 }
 
 
@@ -1048,13 +1041,14 @@ void setup() {
     mcpKeyboard.digitalWrite(7, HIGH); //backlit on
   }
   else keybModuleExist = 0;
-
-  TTOT = ESP.getCpuFreqMHz()*1000000/ZX_FRAME_RATE;
   
   //filesystem init
   LittleFS.begin();
 
   //Serial.println(ESP.getFreeHeap());
+
+  myESPboy.tft.startWrite();  
+
 }
 
 
