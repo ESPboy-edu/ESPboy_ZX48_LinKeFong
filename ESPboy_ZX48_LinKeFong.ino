@@ -554,6 +554,8 @@ void IRAM_ATTR zx_render_frame()
       swplh(RGB565Q(255, 255, 255)),
     };
 
+
+  while(nbSPI_isBusy());
   
   if (line_change[32])
    {
@@ -563,8 +565,7 @@ void IRAM_ATTR zx_render_frame()
     myESPboy.tft.fillRect(0,112,128,16,col);
   }
 
-
-row = 16;
+  row = 16;
   myESPboy.tft.setAddrWindow(0, row, 128, 96);
 
 
