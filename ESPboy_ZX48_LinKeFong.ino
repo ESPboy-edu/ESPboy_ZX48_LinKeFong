@@ -110,6 +110,8 @@ int frame_ticks;
 #define SAMPLE_RATE     48000   //more is better, but emulations gets slower
 
 #define MAX_FRAMESKIP   4
+#define MAX_FILES   100
+
 
 enum {
   K_CS = 0,
@@ -877,37 +879,26 @@ void file_browser(const char* path, const char* header, char* fname, uint16_t fn
   char name[sizeof(filename)];
   const char* str;
   char *namesList;
-  uint8_t fleCntr;
 
   memset(fname, 0, fname_len);
   memset(name, 0, sizeof(name));
 
   myESPboy.tft.fillScreen(TFT_BLACK);
-  printFast(0, 0, "Init files...", TFT_YELLOW);
+  printFast(0, 0, (char *)"Init files...", TFT_YELLOW);
 
   file_count = 0;
   control_type = 0;
 
-  dir = LittleFS.openDir(path);
-  while (dir.next()){
-    entry = dir.openFile("r");
-    filter = file_browser_ext(entry.name());
-    entry.close();
-    if (filter) ++file_count;
-  }
-
-
-  namesList = (char *)malloc(sizeof(filename) * file_count);
+  namesList = (char *)malloc(sizeof(filename) * MAX_FILES);
  
-  dir.rewind();
-  fleCntr=0;
-  while (dir.next()){
+  dir = LittleFS.openDir(path);
+  while (dir.next() && file_count < MAX_FILES){
     entry = dir.openFile("r");
     filter = file_browser_ext(entry.name());
     if (filter) {
       String str = entry.name();
-      strcpy(&namesList[fleCntr*sizeof(filename)], str.c_str());
-      fleCntr++;}
+      strcpy(&namesList[file_count*sizeof(filename)], str.c_str());
+      file_count++;}
     entry.close();
   }
 
@@ -1014,7 +1005,7 @@ void file_browser(const char* path, const char* header, char* fname, uint16_t fn
     }
 
     if ((myESPboy.getKeys() & PAD_LFT) || (myESPboy.getKeys() & PAD_RGT)) {
-      fname[0] = 0;
+      //fname[0] = 0;
       myESPboy.smartDelay(500);
       break;
     }
