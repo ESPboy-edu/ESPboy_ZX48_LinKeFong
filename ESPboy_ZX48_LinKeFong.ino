@@ -1,3 +1,4 @@
+//v1.7 29.04.2024 file browser improved + fixes (RomanS)
 //v1.6 24.01.2023 back old render for better compatibility for redPCB displays (RomanS)
 //v1.5 23.12.2022 nbSPI rendering added + speed restriction to real ZX speed (RomanS)
 //v1.4 19.10.2021 Speed optimizations, palette corrections, PROGMEM demo game load (RomanS)
@@ -88,7 +89,9 @@ uint16_t line_buffer[128] __attribute__ ((aligned(32)));
 
 uint8_t line_change[32 + 1] __attribute__ ((aligned(32))); //bit mask to updating each line, the extra bit is border update flag
 
-uint8_t memory[49152] __attribute__ ((aligned(32)));
+//uint8_t memory[49152] __attribute__ ((aligned(32)));
+#define MEMORY_SIZE 49152
+uint8_t *memory;
 
 uint8_t port_fe;  //keyboard, tape, sound, border
 uint8_t port_1f;  //kempston joystick
@@ -312,6 +315,7 @@ void port_out(uint16_t port, uint8_t value)
 
 void zx_init()
 {
+  memory = (uint8_t*)malloc(MEMORY_SIZE);
   memset(memory, 0, sizeof(memory));
   memset((void *)key_matrix, 0, sizeof(key_matrix));
   memset(line_change, 0xff, sizeof(line_change));
@@ -347,10 +351,6 @@ void z80_unrle(uint8_t* mem, int sz)
     }
   }
 }
-
-
-
-
 
 
  
@@ -818,35 +818,16 @@ void drawBMP8Part(int16_t x, int16_t y, const uint8_t bitmap[], int16_t dx, int1
 
 
 
-void drawCharFast(uint16_t x, uint16_t y, uint8_t c, uint16_t color, uint16_t bg)
-{
-  for (uint16_t i = 0; i < 5; ++i)
-  {
-    uint16_t line = pgm_read_byte(&font[c * 5 + i]);
-
-    for (uint16_t j = 0; j < 8; ++j)
-    {
-      uint16_t c16 = (line & 1) ? color : bg;
-      //line_buffer_1[j * 5 + i] = c16;
-      line_buffer[j * 5 + i] = c16;
-      line >>= 1;
-    }
-  }
-
-  //myESPboy.tft.pushImage(x, y, 5, 8, line_buffer_1);
-  myESPboy.tft.pushImage(x, y, 5, 8, line_buffer);
+void drawCharFast(uint16_t x, uint16_t y, uint8_t c, uint16_t color, uint16_t bg){
+  myESPboy.tft.drawChar(x, y, c, color, bg, 1);
 }
 
 
 
-void printFast(int x, int y, char* str, int16_t color)
-{
-  while (1)
-  {
+void printFast(int x, int y, char* str, int16_t color){
+  while (1){
     char c = *str++;
-
     if (!c) break;
-
     drawCharFast(x, y, c, color, 0);
     x += 6;
   }
@@ -882,7 +863,6 @@ int16_t file_cursor;
 uint8_t file_browser_ext(const char* name)
 {
   while (1) if (*name++ == '.') break;
-
   return (strcasecmp(name, FILE_FILTER) == 0) ? 1 : 0;
 }
 
@@ -896,30 +876,44 @@ void file_browser(const char* path, const char* header, char* fname, uint16_t fn
   fs::File entry;
   char name[sizeof(filename)];
   const char* str;
+  char *namesList;
+  uint8_t fleCntr;
 
   memset(fname, 0, fname_len);
   memset(name, 0, sizeof(name));
 
   myESPboy.tft.fillScreen(TFT_BLACK);
-
-  dir = LittleFS.openDir(path);
+  printFast(0, 0, "Init files...", TFT_YELLOW);
 
   file_count = 0;
   control_type = 0;
 
-  while (dir.next())
-  {
+  dir = LittleFS.openDir(path);
+  while (dir.next()){
     entry = dir.openFile("r");
-
     filter = file_browser_ext(entry.name());
-
     entry.close();
-
     if (filter) ++file_count;
   }
 
-  if (!file_count)
-  {
+
+  namesList = (char *)malloc(sizeof(filename) * file_count);
+ 
+  dir.rewind();
+  fleCntr=0;
+  while (dir.next()){
+    entry = dir.openFile("r");
+    filter = file_browser_ext(entry.name());
+    if (filter) {
+      String str = entry.name();
+      strcpy(&namesList[fleCntr*sizeof(filename)], str.c_str());
+      fleCntr++;}
+    entry.close();
+  }
+
+  myESPboy.tft.fillScreen(TFT_BLACK);
+
+  if (!file_count){
     filename[0] = 0;
     //printFast(24, 60, (char*)"No files found", TFT_RED);
     //while (1) myESPboy.smartDelay(1000);
@@ -927,7 +921,7 @@ void file_browser(const char* path, const char* header, char* fname, uint16_t fn
   else
   {
   printFast(4, 4, (char*)header, TFT_GREEN);
-  myESPboy.tft.fillRect(0, 12, 128, 1, TFT_WHITE);
+  myESPboy.tft.drawFastHLine(0, 12, 128, TFT_WHITE);
 
   change = 1;
   frame = 0;
@@ -937,40 +931,18 @@ void file_browser(const char* path, const char* header, char* fname, uint16_t fn
     if (change)
     {
       printFast(100, 4, (char*)layout_name[control_type], TFT_WHITE);
-
       pos = file_cursor - FILE_HEIGHT / 2;
-
       if (pos > file_count - FILE_HEIGHT) pos = file_count - FILE_HEIGHT;
       if (pos < 0) pos = 0;
 
-      dir = LittleFS.openDir(path);
-      i = pos;
-      while (dir.next())
-      {
-        entry = dir.openFile("r");
-
-        filter = file_browser_ext(entry.name());
-
-        entry.close();
-
-        if (!filter) continue;
-
-        --i;
-        if (i < 0) break;
-      }
 
       sy = 14;
       i = 0;
 
       while (1)
       {
-        entry = dir.openFile("r");
-
-        filter = file_browser_ext(entry.name());
-
-        if (filter)
         {
-          str = entry.name();
+          str = &namesList[pos*sizeof(filename)];
 
           for (j = 0; j < sizeof(name) - 1; ++j)
           {
@@ -983,15 +955,14 @@ void file_browser(const char* path, const char* header, char* fname, uint16_t fn
 
           if (pos == file_cursor)
           {
-            strncpy(fname, entry.name(), fname_len);
+            strncpy(fname, &namesList[pos*sizeof(filename)], fname_len);
 
             if (!(frame & 128)) drawCharFast(2, sy, 0xda, TFT_WHITE, TFT_BLACK);
           }
         }
 
-        entry.close();
 
-        if (!dir.next()) break;
+        if (pos > file_count) break;
 
         if (filter)
         {
@@ -1074,6 +1045,7 @@ void file_browser(const char* path, const char* header, char* fname, uint16_t fn
   }
   }
   myESPboy.tft.fillScreen(TFT_BLACK);
+  delete (namesList);
 }
 
 
