@@ -1,6 +1,12 @@
 # ESPboy_ZX48 LinKeFong core and improved sound rendering
 ESPboy emulator of the famous ZX Spectrum 48 machine. Let's play retro ZX48 games )
    
+v1.7 29.04.2024 file browser improved + fixes (RomanS)
+
+v1.6 24.01.2023 back old render for better compatibility for redPCB displays (RomanS)
+
+v1.5 23.12.2022 nbSPI rendering added + speed restriction to real ZX speed (RomanS)
+
 v1.4 19.10.2021 Speed optimizations, palette corrections, PROGMEM demo game load
 
 v1.3 13.08.2021 Moving from libzymosis to z80emu by Lin Ke-Fong to improve performance and improving sound rendering   
