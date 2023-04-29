@@ -733,10 +733,10 @@ void IRAM_ATTR zx_render_frame()
 
 
 int IRAM_ATTR check_key(){
-  pad_state_prev = pad_state;
-  pad_state = ~myESPboy.mcp.readGPIOAB() & 255;
-  pad_state_t = (pad_state ^ pad_state_prev) & pad_state;
-  return pad_state;
+ pad_state_prev = pad_state;
+ pad_state = myESPboy.getKeys();
+ pad_state_t = (pad_state ^ pad_state_prev) & pad_state; 
+ return pad_state;
 }
 
 
@@ -1107,6 +1107,7 @@ void setup() {
 
   //keybModule init
   Wire.begin();
+  Wire.setClock(400000);
   Wire.beginTransmission(0x27); //check for MCP23017Keyboard at address 0x27
   if (!Wire.endTransmission()) {
     keybModuleExist = 1;
