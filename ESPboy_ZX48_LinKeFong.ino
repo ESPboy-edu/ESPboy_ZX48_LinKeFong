@@ -669,15 +669,17 @@ void IRAM_ATTR zx_render_frame()
   if (line_change[32])
   {
     line_change[32] = 0;
-
     col = palette[port_fe & 7] << 2;
-    for (i = 0; i < 128; ++i) line_buffer[i] = col;
+    myESPboy.tft.fillRect(0,0,128,16,col);
+    myESPboy.tft.fillRect(0,112,128,16,col);
+/*    for (i = 0; i < 128; ++i) line_buffer[i] = col;
     for (i = 0; i < 16; ++i)
     {
       myESPboy.tft.pushImage(0, i, 128, 1, line_buffer);
       myESPboy.tft.pushImage(0, 112 + i, 128, 1, line_buffer);
     }
-  }
+ */
+ }
 
   row = 16;
   myESPboy.tft.setAddrWindow(0, row, 128, 96);
