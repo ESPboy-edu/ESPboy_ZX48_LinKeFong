@@ -21,11 +21,11 @@
 #include "game.h"
 //#include "nbSPI.h"
 
-#define SIGMA_DELTA_RATE 48000
+#define SIGMA_DELTA_RATE 200000
 
 /*
    IMPORTANT: the project consumes a lot of RAM, to allow enough
-    - Use SDK 2.7.4 for compilation
+    - Use SDK 3.1.2 for compilation
     - Set SSL Support to Basic
     - Set IwIP to Lower memory (no features)
     
